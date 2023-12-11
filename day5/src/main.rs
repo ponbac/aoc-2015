@@ -1,11 +1,18 @@
-static EXAMPLE_INPUT: &str = r#"ugknbfddgicrmopn
-jchzalrnumimnmhp"#;
+use itertools::Itertools;
+
+static EXAMPLE_INPUT: &str = r#"
+qjhvhtzxzqqjkmpb
+xxyxx
+uurcxstgmygtbstg
+ieodomkazucvgmuy
+xxxyxx
+"#;
 
 fn main() {
     println!("\n-- Advent of Code 2015 - Day 5 --");
 
-    // let input = EXAMPLE_INPUT;
-    let input = include_str!("input.txt");
+    let input = EXAMPLE_INPUT;
+    // let input = include_str!("input.txt");
 
     part1(input);
     part2(input);
@@ -51,29 +58,25 @@ fn part2(input: &str) {
     let n_nice = input
         .lines()
         .filter(|line| {
-            let mut has_pair = false;
-            let mut has_repeat = false;
+            let pairs = format!("{}{}", line, if line.len() % 2 == 0 { "" } else { " " })
+                .chars()
+                .tuple_windows()
+                // .inspect(|(a, b, c)| println!("{}{}{}", a, b, c))
+                .filter(|(a, b, c)| !(a == b && b == c))
+                .map(|(a, b, _)| format!("{}{}", a, b))
+                // .inspect(|pair| println!("{}", pair))
+                .collect::<Vec<_>>();
 
-            let mut prev = ' ';
-            let mut prev_prev = ' ';
-            for (i, c) in line.chars().enumerate() {
-                if i > 1 && !has_pair {
-                    let pair = format!("{}{}", prev_prev, prev);
-                    let rest = &line[i + 1..];
-                    if rest.contains(&pair) {
-                        has_pair = true;
-                    }
-                }
+            let has_pairs = pairs
+                .iter()
+                .enumerate()
+                .any(|(i, pair)| pairs.iter().skip(i + 1).any(|p| p == pair));
 
-                if i > 0 && !has_repeat && (c == prev_prev && c != prev) && prev_prev != ' ' {
-                    has_repeat = true;
-                }
+            let has_repeat = line.chars().tuple_windows().any(|(a, _, c)| a == c);
 
-                prev_prev = prev;
-                prev = c;
-            }
+            println!("{} {} {}", line, has_pairs, has_repeat);
 
-            has_pair && has_repeat
+            has_pairs && has_repeat
         })
         .count();
 
