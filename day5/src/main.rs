@@ -11,8 +11,8 @@ xxxyxx
 fn main() {
     println!("\n-- Advent of Code 2015 - Day 5 --");
 
-    let input = EXAMPLE_INPUT;
-    // let input = include_str!("input.txt");
+    // let input = EXAMPLE_INPUT;
+    let input = include_str!("input.txt");
 
     part1(input);
     part2(input);
@@ -58,7 +58,7 @@ fn part2(input: &str) {
     let n_nice = input
         .lines()
         .filter(|line| {
-            let pairs = format!("{}{}", line, if line.len() % 2 == 0 { "" } else { " " })
+            let pairs = format!("{}{}", line, if line.len() % 2 == 0 { " " } else { " _" })
                 .chars()
                 .tuple_windows()
                 // .inspect(|(a, b, c)| println!("{}{}{}", a, b, c))
