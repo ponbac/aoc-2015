@@ -1,84 +1,44 @@
-use itertools::Itertools;
+use std::str;
 
-static EXAMPLE_INPUT: &str = r#"
-qjhvhtzxzqqjkmpb
-xxyxx
-uurcxstgmygtbstg
-ieodomkazucvgmuy
-xxxyxx
-"#;
+static INPUT: &'static str = include_str!("input.txt");
 
-fn main() {
-    println!("\n-- Advent of Code 2015 - Day 5 --");
-
-    // let input = EXAMPLE_INPUT;
-    let input = include_str!("input.txt");
-
-    part1(input);
-    part2(input);
+pub fn main() {
+    println!(
+        "(Part 1) Nice Strings: {:?}",
+        INPUT.lines().filter(|s| nice1(s)).count()
+    );
+    println!(
+        "(Part 2) Nice Strings: {:?}",
+        INPUT.lines().filter(|s| nice2(s)).count()
+    );
 }
 
-fn part1(input: &str) {
-    let vowels = ['a', 'e', 'i', 'o', 'u'];
-    let forbidden = ["ab", "cd", "pq", "xy"];
+const VOWELS: &'static [char] = &['a', 'e', 'i', 'o', 'u'];
+const BAD_PAT: &'static [&'static str] = &["ab", "cd", "pq", "xy"];
 
-    let n_nice = input
-        .lines()
-        .filter(|line| {
-            let mut n_vowels = 0;
-            let mut has_double = false;
-            let mut has_forbidden = false;
-
-            let mut prev = ' ';
-            for c in line.chars() {
-                if vowels.contains(&c) {
-                    n_vowels += 1;
-                }
-
-                if c == prev {
-                    has_double = true;
-                }
-
-                let window = format!("{}{}", prev, c);
-                if forbidden.contains(&window.as_str()) {
-                    has_forbidden = true;
-                }
-
-                prev = c;
-            }
-
-            n_vowels >= 3 && has_double && !has_forbidden
-        })
-        .count();
-
-    println!("Part 1: {}", n_nice);
+pub fn nice1(input: &str) -> bool {
+    (input.split(VOWELS).count() <= 3)
+        && BAD_PAT.iter().any(|pat| input.contains(pat))
+        && input.as_bytes().windows(2).any(|pair| pair[0] == pair[1])
 }
 
-fn part2(input: &str) {
-    let n_nice = input
-        .lines()
-        .filter(|line| {
-            let pairs = format!("{}{}", line, if line.len() % 2 == 0 { " " } else { " _" })
-                .chars()
-                .tuple_windows()
-                // .inspect(|(a, b, c)| println!("{}{}{}", a, b, c))
-                .filter(|(a, b, c)| !(a == b && b == c))
-                .map(|(a, b, _)| format!("{}{}", a, b))
-                // .inspect(|pair| println!("{}", pair))
-                .collect::<Vec<_>>();
+pub fn nice2(input: &str) -> bool {
+    // Byte slices allow more fun.
+    let bytes = input.as_bytes();
 
-            let has_pairs = pairs
-                .iter()
-                .enumerate()
-                .any(|(i, pair)| pairs.iter().skip(i + 1).any(|p| p == pair));
+    bytes.windows(3).any(|pair| pair[0] == pair[2]) && {
+        // Iterate through every pair of characters
+        bytes.windows(2).enumerate().any(|(i, pair)|
+            // Find the last occurence of the pattern in the string.
+            input.rfind(str::from_utf8(pair).unwrap())
+                // And make sure it's not sharing characters.
+                .map(|index| index > i+1).unwrap_or(false))
+    }
+}
 
-            let has_repeat = line.chars().tuple_windows().any(|(a, _, c)| a == c);
-
-            println!("{} {} {}", line, has_pairs, has_repeat);
-
-            has_pairs && has_repeat
-        })
-        .count();
-
-    println!("Part 2: {}", n_nice);
+// Make sure my math is right.
+#[test]
+fn test_nice2() {
+    assert!(!nice2("aaa"));
+    assert!(nice2("aaaa"));
 }
