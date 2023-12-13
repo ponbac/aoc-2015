@@ -46,11 +46,11 @@ impl Value {
 
 #[derive(Debug)]
 enum Operation {
-    And(Value, String),
-    Or(String, String),
-    LShift(String, usize),
-    RShift(String, usize),
-    Not(String),
+    And(Value, Value),
+    Or(Value, Value),
+    LShift(Value, u16),
+    RShift(Value, u16),
+    Not(Value),
     Assign(Value),
 }
 
@@ -171,14 +171,14 @@ fn parse_or(i: &str) -> IResult<&str, Operation> {
 
 fn parse_lshift(i: &str) -> IResult<&str, Operation> {
     map(
-        tuple((wire_name, space1, tag("LSHIFT"), space1, number)),
+        tuple((wire_name, space1, tag("LSHIFT"), space1, parse_number)),
         |(a, _, _, _, n)| Operation::LShift(a, n),
     )(i)
 }
 
 fn parse_rshift(i: &str) -> IResult<&str, Operation> {
     map(
-        tuple((wire_name, space1, tag("RSHIFT"), space1, number)),
+        tuple((wire_name, space1, tag("RSHIFT"), space1, parse_number)),
         |(a, _, _, _, n)| Operation::RShift(a, n),
     )(i)
 }
