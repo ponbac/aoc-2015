@@ -44,7 +44,7 @@ impl Value {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 enum Operation {
     And(Value, Value),
     Or(Value, Value),
@@ -67,7 +67,7 @@ impl Operation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 struct Instruction {
     operation: Operation,
     output: String,
@@ -93,7 +93,7 @@ fn solve(input: &str) {
 
     // println!("Wire map: {:?}", wire_map);
 
-    let instructions: Vec<Instruction> = input
+    let mut instructions: Vec<Instruction> = input
         .trim()
         .lines()
         .map(|l| Instruction::parse(l).unwrap().1)
@@ -103,81 +103,100 @@ fn solve(input: &str) {
         println!("{:?}", instruction);
     }
 
-    for instruction in instructions {
-        process(instruction, &mut wire_map);
+    while !instructions.is_empty() {
+        let mut new_instructions = Vec::new();
+
+        for instruction in instructions {
+            if !process(&instruction, &mut wire_map) {
+                println!("Failed to process: {:?}", instruction);
+                new_instructions.push(instruction);
+            }
+        }
+
+        instructions = new_instructions;
     }
 
     println!("Wire map: {:?}", wire_map);
     println!("Wire a: {:?}", wire_map.get("a"));
 }
 
-fn process(instruction: Instruction, wire_map: &mut HashMap<String, u16>) -> bool {
-    match instruction.operation {
+fn process(instruction: &Instruction, wire_map: &mut HashMap<String, u16>) -> bool {
+    match &instruction.operation {
         Operation::Assign(n) => {
-            wire_map.insert(
-                instruction.output,
-                match n {
-                    Value::Wire(w) => *wire_map.get(&w).unwrap(),
-                    Value::Number(n) => n,
-                },
-            );
+            let n = match n {
+                Value::Wire(w) => *wire_map.get(w).unwrap(),
+                Value::Number(n) => *n,
+            };
+            if n != 0 {
+                wire_map.insert(instruction.output.clone(), n);
+                return true;
+            }
         }
         Operation::And(a, b) => {
-            wire_map.insert(
-                instruction.output,
-                match a {
-                    Value::Wire(w) => *wire_map.get(&w).unwrap(),
-                    Value::Number(n) => n,
-                } & match b {
-                    Value::Wire(w) => *wire_map.get(&w).unwrap(),
-                    Value::Number(n) => n,
-                },
-            );
+            let a = match a {
+                Value::Wire(w) => *wire_map.get(w).unwrap(),
+                Value::Number(n) => *n,
+            };
+            let b = match b {
+                Value::Wire(w) => *wire_map.get(w).unwrap(),
+                Value::Number(n) => *n,
+            };
+            if a != 0 && b != 0 {
+                wire_map.insert(instruction.output.clone(), a & b);
+                return true;
+            }
         }
         Operation::Or(a, b) => {
-            wire_map.insert(
-                instruction.output,
-                match a {
-                    Value::Wire(w) => *wire_map.get(&w).unwrap(),
-                    Value::Number(n) => n,
-                } | match b {
-                    Value::Wire(w) => *wire_map.get(&w).unwrap(),
-                    Value::Number(n) => n,
-                },
-            );
+            let a = match a {
+                Value::Wire(w) => *wire_map.get(w).unwrap(),
+                Value::Number(n) => *n,
+            };
+            let b = match b {
+                Value::Wire(w) => *wire_map.get(w).unwrap(),
+                Value::Number(n) => *n,
+            };
+            if a != 0 && b != 0 {
+                wire_map.insert(instruction.output.clone(), a | b);
+                return true;
+            }
         }
         Operation::LShift(a, n) => {
-            wire_map.insert(
-                instruction.output,
-                match a {
-                    Value::Wire(w) => *wire_map.get(&w).unwrap(),
-                    Value::Number(n) => n,
-                } << match n {
-                    Value::Wire(w) => *wire_map.get(&w).unwrap(),
-                    Value::Number(n) => n,
-                },
-            );
+            let a = match a {
+                Value::Wire(w) => *wire_map.get(w).unwrap(),
+                Value::Number(n) => *n,
+            };
+            let n = match n {
+                Value::Wire(w) => *wire_map.get(w).unwrap(),
+                Value::Number(n) => *n,
+            };
+            if a != 0 && n != 0 {
+                wire_map.insert(instruction.output.clone(), a << n);
+                return true;
+            }
         }
         Operation::RShift(a, n) => {
-            wire_map.insert(
-                instruction.output,
-                match a {
-                    Value::Wire(w) => *wire_map.get(&w).unwrap(),
-                    Value::Number(n) => n,
-                } >> match n {
-                    Value::Wire(w) => *wire_map.get(&w).unwrap(),
-                    Value::Number(n) => n,
-                },
-            );
+            let a = match a {
+                Value::Wire(w) => *wire_map.get(w).unwrap(),
+                Value::Number(n) => *n,
+            };
+            let n = match n {
+                Value::Wire(w) => *wire_map.get(w).unwrap(),
+                Value::Number(n) => *n,
+            };
+            if a != 0 && n != 0 {
+                wire_map.insert(instruction.output.clone(), a >> n);
+                return true;
+            }
         }
         Operation::Not(a) => {
-            wire_map.insert(
-                instruction.output,
-                !match a {
-                    Value::Wire(w) => *wire_map.get(&w).unwrap(),
-                    Value::Number(n) => n,
-                },
-            );
+            let a = match a {
+                Value::Wire(w) => *wire_map.get(w).unwrap(),
+                Value::Number(n) => *n,
+            };
+            if a != 0 {
+                wire_map.insert(instruction.output.clone(), !a);
+                return true;
+            }
         }
     }
 
