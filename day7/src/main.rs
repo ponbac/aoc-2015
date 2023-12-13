@@ -29,14 +29,29 @@ fn main() {
     solve(input);
 }
 
+#[derive(Debug, Hash, Eq, PartialEq)]
+enum Value {
+    Wire(String),
+    Number(u16),
+}
+
+impl Value {
+    fn parse(i: &str) -> IResult<&str, Self> {
+        alt((
+            map(wire_name, Value::Wire),
+            map(parse_number, Value::Number),
+        ))(i)
+    }
+}
+
 #[derive(Debug)]
 enum Operation {
-    And(String, String),
+    And(Value, String),
     Or(String, String),
     LShift(String, usize),
     RShift(String, usize),
     Not(String),
-    Assign(u16),
+    Assign(Value),
 }
 
 impl Operation {
@@ -91,12 +106,23 @@ fn solve(input: &str) {
     for instruction in instructions {
         match instruction.operation {
             Operation::Assign(n) => {
-                wire_map.insert(instruction.output, n);
+                wire_map.insert(
+                    instruction.output,
+                    match n {
+                        Value::Wire(w) => *wire_map.get(&w).unwrap(),
+                        Value::Number(n) => n,
+                    },
+                );
             }
             Operation::And(a, b) => {
-                let a = wire_map.get(&a).unwrap();
                 let b = wire_map.get(&b).unwrap();
-                wire_map.insert(instruction.output, a & b);
+                wire_map.insert(
+                    instruction.output,
+                    match a {
+                        Value::Wire(w) => wire_map.get(&w).unwrap() & b,
+                        Value::Number(n) => n & b,
+                    },
+                );
             }
             Operation::Or(a, b) => {
                 let a = wire_map.get(&a).unwrap();
@@ -131,8 +157,8 @@ fn number(i: &str) -> IResult<&str, usize> {
 
 fn parse_and(i: &str) -> IResult<&str, Operation> {
     map(
-        tuple((wire_name, space1, tag("AND"), space1, wire_name)),
-        |(a, _, _, _, b)| Operation::And(a, b),
+        tuple((Value::parse, tag(" AND "), wire_name)),
+        |(a, _, b)| Operation::And(a, b),
     )(i)
 }
 
@@ -164,7 +190,7 @@ fn parse_not(i: &str) -> IResult<&str, Operation> {
 }
 
 fn parse_assign(i: &str) -> IResult<&str, Operation> {
-    map(parse_number, Operation::Assign)(i)
+    map(Value::parse, Operation::Assign)(i)
 }
 
 fn parse_number(i: &str) -> IResult<&str, u16> {
