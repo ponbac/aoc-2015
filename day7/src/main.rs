@@ -48,8 +48,8 @@ impl Value {
 enum Operation {
     And(Value, Value),
     Or(Value, Value),
-    LShift(Value, u16),
-    RShift(Value, u16),
+    LShift(Value, Value),
+    RShift(Value, Value),
     Not(Value),
     Assign(Value),
 }
@@ -104,87 +104,120 @@ fn solve(input: &str) {
     }
 
     for instruction in instructions {
-        match instruction.operation {
-            Operation::Assign(n) => {
-                wire_map.insert(
-                    instruction.output,
-                    match n {
-                        Value::Wire(w) => *wire_map.get(&w).unwrap(),
-                        Value::Number(n) => n,
-                    },
-                );
-            }
-            Operation::And(a, b) => {
-                let b = wire_map.get(&b).unwrap();
-                wire_map.insert(
-                    instruction.output,
-                    match a {
-                        Value::Wire(w) => wire_map.get(&w).unwrap() & b,
-                        Value::Number(n) => n & b,
-                    },
-                );
-            }
-            Operation::Or(a, b) => {
-                let a = wire_map.get(&a).unwrap();
-                let b = wire_map.get(&b).unwrap();
-                wire_map.insert(instruction.output, a | b);
-            }
-            Operation::LShift(a, n) => {
-                let a = wire_map.get(&a).unwrap();
-                wire_map.insert(instruction.output, a << n);
-            }
-            Operation::RShift(a, n) => {
-                let a = wire_map.get(&a).unwrap();
-                wire_map.insert(instruction.output, a >> n);
-            }
-            Operation::Not(a) => {
-                let a = wire_map.get(&a).unwrap();
-                wire_map.insert(instruction.output, !a);
-            }
-        }
+        process(instruction, &mut wire_map);
     }
 
     println!("Wire map: {:?}", wire_map);
+    println!("Wire a: {:?}", wire_map.get("a"));
+}
+
+fn process(instruction: Instruction, wire_map: &mut HashMap<String, u16>) -> bool {
+    match instruction.operation {
+        Operation::Assign(n) => {
+            wire_map.insert(
+                instruction.output,
+                match n {
+                    Value::Wire(w) => *wire_map.get(&w).unwrap(),
+                    Value::Number(n) => n,
+                },
+            );
+        }
+        Operation::And(a, b) => {
+            wire_map.insert(
+                instruction.output,
+                match a {
+                    Value::Wire(w) => *wire_map.get(&w).unwrap(),
+                    Value::Number(n) => n,
+                } & match b {
+                    Value::Wire(w) => *wire_map.get(&w).unwrap(),
+                    Value::Number(n) => n,
+                },
+            );
+        }
+        Operation::Or(a, b) => {
+            wire_map.insert(
+                instruction.output,
+                match a {
+                    Value::Wire(w) => *wire_map.get(&w).unwrap(),
+                    Value::Number(n) => n,
+                } | match b {
+                    Value::Wire(w) => *wire_map.get(&w).unwrap(),
+                    Value::Number(n) => n,
+                },
+            );
+        }
+        Operation::LShift(a, n) => {
+            wire_map.insert(
+                instruction.output,
+                match a {
+                    Value::Wire(w) => *wire_map.get(&w).unwrap(),
+                    Value::Number(n) => n,
+                } << match n {
+                    Value::Wire(w) => *wire_map.get(&w).unwrap(),
+                    Value::Number(n) => n,
+                },
+            );
+        }
+        Operation::RShift(a, n) => {
+            wire_map.insert(
+                instruction.output,
+                match a {
+                    Value::Wire(w) => *wire_map.get(&w).unwrap(),
+                    Value::Number(n) => n,
+                } >> match n {
+                    Value::Wire(w) => *wire_map.get(&w).unwrap(),
+                    Value::Number(n) => n,
+                },
+            );
+        }
+        Operation::Not(a) => {
+            wire_map.insert(
+                instruction.output,
+                !match a {
+                    Value::Wire(w) => *wire_map.get(&w).unwrap(),
+                    Value::Number(n) => n,
+                },
+            );
+        }
+    }
+
+    false
 }
 
 fn wire_name(i: &str) -> IResult<&str, String> {
     map(alpha1, |s: &str| s.to_string())(i)
 }
 
-fn number(i: &str) -> IResult<&str, usize> {
-    map_res(digit1, str::parse::<usize>)(i)
-}
-
 fn parse_and(i: &str) -> IResult<&str, Operation> {
     map(
-        tuple((Value::parse, tag(" AND "), wire_name)),
+        tuple((Value::parse, tag(" AND "), Value::parse)),
         |(a, _, b)| Operation::And(a, b),
     )(i)
 }
 
 fn parse_or(i: &str) -> IResult<&str, Operation> {
     map(
-        tuple((wire_name, space1, tag("OR"), space1, wire_name)),
+        tuple((Value::parse, space1, tag("OR"), space1, Value::parse)),
         |(a, _, _, _, b)| Operation::Or(a, b),
     )(i)
 }
 
 fn parse_lshift(i: &str) -> IResult<&str, Operation> {
     map(
-        tuple((wire_name, space1, tag("LSHIFT"), space1, parse_number)),
+        tuple((Value::parse, space1, tag("LSHIFT"), space1, Value::parse)),
         |(a, _, _, _, n)| Operation::LShift(a, n),
     )(i)
 }
 
 fn parse_rshift(i: &str) -> IResult<&str, Operation> {
     map(
-        tuple((wire_name, space1, tag("RSHIFT"), space1, parse_number)),
+        tuple((Value::parse, space1, tag("RSHIFT"), space1, Value::parse)),
         |(a, _, _, _, n)| Operation::RShift(a, n),
     )(i)
 }
 
 fn parse_not(i: &str) -> IResult<&str, Operation> {
-    map(preceded(tuple((tag("NOT"), space1)), wire_name), |a| {
+    map(preceded(tuple((tag("NOT"), space1)), Value::parse), |a| {
         Operation::Not(a)
     })(i)
 }
