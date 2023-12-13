@@ -8,6 +8,7 @@ use nom::{
     sequence::{preceded, separated_pair, tuple},
     IResult,
 };
+use rand::seq::SliceRandom;
 
 static EXAMPLE_INPUT: &str = r#"
 123 -> x
@@ -106,13 +107,15 @@ fn solve(input: &str) {
     while !instructions.is_empty() {
         let mut new_instructions = Vec::new();
 
+        instructions.shuffle(&mut rand::thread_rng());
         for instruction in instructions {
             if !process(&instruction, &mut wire_map) {
-                println!("Failed to process: {:?}", instruction);
+                // println!("Failed to process: {:?}", instruction);
                 new_instructions.push(instruction);
             }
         }
 
+        println!("Instructions left: {}", new_instructions.len());
         instructions = new_instructions;
     }
 
