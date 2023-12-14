@@ -93,7 +93,7 @@ fn solve(input: &str) {
 
     // println!("Wire map: {:?}", wire_map);
 
-    let mut instructions: Vec<Instruction> = input
+    let instructions: Vec<Instruction> = input
         .trim()
         .lines()
         .map(|l| Instruction::parse(l).unwrap().1)
@@ -101,37 +101,22 @@ fn solve(input: &str) {
 
     for instruction in &instructions {
         println!("{:?}", instruction);
-    }
-
-    while !instructions.is_empty() {
-        let mut new_instructions = Vec::new();
-
-        for instruction in instructions {
-            if !process(&instruction, &mut wire_map) {
-                // println!("Failed to process: {:?}", instruction);
-                new_instructions.push(instruction);
-            }
-        }
-
-        println!("Instructions left: {}", new_instructions.len());
-        instructions = new_instructions;
+        process(instruction, &mut wire_map);
     }
 
     println!("Wire map: {:?}", wire_map);
     println!("Wire a: {:?}", wire_map.get("a"));
 }
 
-fn process(instruction: &Instruction, wire_map: &mut HashMap<String, u16>) -> bool {
+fn process(instruction: &Instruction, wire_map: &mut HashMap<String, u16>) {
     match &instruction.operation {
         Operation::Assign(n) => {
             let n = match n {
                 Value::Wire(w) => *wire_map.get(w).unwrap(),
                 Value::Number(n) => *n,
             };
-            if n != 0 {
-                wire_map.insert(instruction.output.clone(), n);
-                return true;
-            }
+
+            wire_map.insert(instruction.output.clone(), n);
         }
         Operation::And(a, b) => {
             let a = match a {
@@ -142,10 +127,8 @@ fn process(instruction: &Instruction, wire_map: &mut HashMap<String, u16>) -> bo
                 Value::Wire(w) => *wire_map.get(w).unwrap(),
                 Value::Number(n) => *n,
             };
-            if a != 0 && b != 0 {
-                wire_map.insert(instruction.output.clone(), a & b);
-                return true;
-            }
+
+            wire_map.insert(instruction.output.clone(), a & b);
         }
         Operation::Or(a, b) => {
             let a = match a {
@@ -156,10 +139,8 @@ fn process(instruction: &Instruction, wire_map: &mut HashMap<String, u16>) -> bo
                 Value::Wire(w) => *wire_map.get(w).unwrap(),
                 Value::Number(n) => *n,
             };
-            if a != 0 && b != 0 {
-                wire_map.insert(instruction.output.clone(), a | b);
-                return true;
-            }
+
+            wire_map.insert(instruction.output.clone(), a | b);
         }
         Operation::LShift(a, n) => {
             let a = match a {
@@ -170,10 +151,8 @@ fn process(instruction: &Instruction, wire_map: &mut HashMap<String, u16>) -> bo
                 Value::Wire(w) => *wire_map.get(w).unwrap(),
                 Value::Number(n) => *n,
             };
-            if a != 0 && n != 0 {
-                wire_map.insert(instruction.output.clone(), a << n);
-                return true;
-            }
+
+            wire_map.insert(instruction.output.clone(), a << n);
         }
         Operation::RShift(a, n) => {
             let a = match a {
@@ -184,24 +163,18 @@ fn process(instruction: &Instruction, wire_map: &mut HashMap<String, u16>) -> bo
                 Value::Wire(w) => *wire_map.get(w).unwrap(),
                 Value::Number(n) => *n,
             };
-            if a != 0 && n != 0 {
-                wire_map.insert(instruction.output.clone(), a >> n);
-                return true;
-            }
+
+            wire_map.insert(instruction.output.clone(), a >> n);
         }
         Operation::Not(a) => {
             let a = match a {
                 Value::Wire(w) => *wire_map.get(w).unwrap(),
                 Value::Number(n) => *n,
             };
-            if a != 0 {
-                wire_map.insert(instruction.output.clone(), !a);
-                return true;
-            }
+
+            wire_map.insert(instruction.output.clone(), !a);
         }
     }
-
-    false
 }
 
 fn wire_name(i: &str) -> IResult<&str, String> {
