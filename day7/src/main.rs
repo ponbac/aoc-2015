@@ -83,48 +83,53 @@ impl Instruction {
 }
 
 fn solve(input: &str) {
-    let mut wire_map: HashMap<String, u16> = HashMap::from_iter(
-        input
-            .trim()
-            .lines()
-            .map(|l| l.split_once(" -> ").unwrap())
-            .map(|(_, k)| (k.trim().to_string(), 0)),
-    );
-
-    // println!("Wire map: {:?}", wire_map);
-
     let instructions: Vec<Instruction> = input
         .trim()
         .lines()
         .map(|l| Instruction::parse(l).unwrap().1)
         .collect();
 
-    for instruction in &instructions {
-        println!("{:?}", instruction);
-        process(instruction, &mut wire_map);
-    }
+    let mut wire_map: HashMap<String, u16> = HashMap::new();
+    let a = process("a", &instructions, &mut wire_map);
 
-    println!("Wire map: {:?}", wire_map);
-    println!("Wire a: {:?}", wire_map.get("a"));
+    println!("Part 1: {}", a);
+
+    let mut wire_map: HashMap<String, u16> = HashMap::new();
+    wire_map.insert("b".to_string(), a);
+    let a = process("a", &instructions, &mut wire_map);
+
+    println!("Part 2: {}", a);
 }
 
-fn process(instruction: &Instruction, wire_map: &mut HashMap<String, u16>) {
+fn process(wire: &str, instructions: &[Instruction], wire_map: &mut HashMap<String, u16>) -> u16 {
+    if let Some(n) = wire_map.get(wire) {
+        return *n;
+    }
+
+    let instruction = instructions
+        .iter()
+        .find(|i| i.output == wire)
+        .expect("Wire not found");
+
     match &instruction.operation {
         Operation::Assign(n) => {
-            let n = match n {
-                Value::Wire(w) => *wire_map.get(w).unwrap(),
-                Value::Number(n) => *n,
+            match n {
+                Value::Wire(w) => {
+                    let n = process(w, instructions, wire_map);
+                    wire_map.insert(instruction.output.clone(), n);
+                }
+                Value::Number(n) => {
+                    wire_map.insert(instruction.output.clone(), *n);
+                }
             };
-
-            wire_map.insert(instruction.output.clone(), n);
         }
         Operation::And(a, b) => {
             let a = match a {
-                Value::Wire(w) => *wire_map.get(w).unwrap(),
+                Value::Wire(w) => process(w, instructions, wire_map),
                 Value::Number(n) => *n,
             };
             let b = match b {
-                Value::Wire(w) => *wire_map.get(w).unwrap(),
+                Value::Wire(w) => process(w, instructions, wire_map),
                 Value::Number(n) => *n,
             };
 
@@ -132,11 +137,11 @@ fn process(instruction: &Instruction, wire_map: &mut HashMap<String, u16>) {
         }
         Operation::Or(a, b) => {
             let a = match a {
-                Value::Wire(w) => *wire_map.get(w).unwrap(),
+                Value::Wire(w) => process(w, instructions, wire_map),
                 Value::Number(n) => *n,
             };
             let b = match b {
-                Value::Wire(w) => *wire_map.get(w).unwrap(),
+                Value::Wire(w) => process(w, instructions, wire_map),
                 Value::Number(n) => *n,
             };
 
@@ -144,11 +149,11 @@ fn process(instruction: &Instruction, wire_map: &mut HashMap<String, u16>) {
         }
         Operation::LShift(a, n) => {
             let a = match a {
-                Value::Wire(w) => *wire_map.get(w).unwrap(),
+                Value::Wire(w) => process(w, instructions, wire_map),
                 Value::Number(n) => *n,
             };
             let n = match n {
-                Value::Wire(w) => *wire_map.get(w).unwrap(),
+                Value::Wire(w) => process(w, instructions, wire_map),
                 Value::Number(n) => *n,
             };
 
@@ -156,11 +161,11 @@ fn process(instruction: &Instruction, wire_map: &mut HashMap<String, u16>) {
         }
         Operation::RShift(a, n) => {
             let a = match a {
-                Value::Wire(w) => *wire_map.get(w).unwrap(),
+                Value::Wire(w) => process(w, instructions, wire_map),
                 Value::Number(n) => *n,
             };
             let n = match n {
-                Value::Wire(w) => *wire_map.get(w).unwrap(),
+                Value::Wire(w) => process(w, instructions, wire_map),
                 Value::Number(n) => *n,
             };
 
@@ -168,13 +173,15 @@ fn process(instruction: &Instruction, wire_map: &mut HashMap<String, u16>) {
         }
         Operation::Not(a) => {
             let a = match a {
-                Value::Wire(w) => *wire_map.get(w).unwrap(),
+                Value::Wire(w) => process(w, instructions, wire_map),
                 Value::Number(n) => *n,
             };
 
             wire_map.insert(instruction.output.clone(), !a);
         }
     }
+
+    *wire_map.get(wire).unwrap()
 }
 
 fn wire_name(i: &str) -> IResult<&str, String> {
