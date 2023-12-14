@@ -3,12 +3,11 @@ use std::collections::HashMap;
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    character::complete::{alpha1, digit1, space1},
+    character::complete::{alpha1, digit1},
     combinator::{map, map_res},
     sequence::{preceded, separated_pair, tuple},
     IResult,
 };
-use rand::seq::SliceRandom;
 
 static EXAMPLE_INPUT: &str = r#"
 123 -> x
@@ -107,7 +106,6 @@ fn solve(input: &str) {
     while !instructions.is_empty() {
         let mut new_instructions = Vec::new();
 
-        instructions.shuffle(&mut rand::thread_rng());
         for instruction in instructions {
             if !process(&instruction, &mut wire_map) {
                 // println!("Failed to process: {:?}", instruction);
@@ -219,29 +217,27 @@ fn parse_and(i: &str) -> IResult<&str, Operation> {
 
 fn parse_or(i: &str) -> IResult<&str, Operation> {
     map(
-        tuple((Value::parse, space1, tag("OR"), space1, Value::parse)),
-        |(a, _, _, _, b)| Operation::Or(a, b),
+        tuple((Value::parse, tag(" OR "), Value::parse)),
+        |(a, _, b)| Operation::Or(a, b),
     )(i)
 }
 
 fn parse_lshift(i: &str) -> IResult<&str, Operation> {
     map(
-        tuple((Value::parse, space1, tag("LSHIFT"), space1, Value::parse)),
-        |(a, _, _, _, n)| Operation::LShift(a, n),
+        tuple((Value::parse, tag(" LSHIFT "), Value::parse)),
+        |(a, _, n)| Operation::LShift(a, n),
     )(i)
 }
 
 fn parse_rshift(i: &str) -> IResult<&str, Operation> {
     map(
-        tuple((Value::parse, space1, tag("RSHIFT"), space1, Value::parse)),
-        |(a, _, _, _, n)| Operation::RShift(a, n),
+        tuple((Value::parse, tag(" RSHIFT "), Value::parse)),
+        |(a, _, n)| Operation::RShift(a, n),
     )(i)
 }
 
 fn parse_not(i: &str) -> IResult<&str, Operation> {
-    map(preceded(tuple((tag("NOT"), space1)), Value::parse), |a| {
-        Operation::Not(a)
-    })(i)
+    map(preceded(tag("NOT "), Value::parse), Operation::Not)(i)
 }
 
 fn parse_assign(i: &str) -> IResult<&str, Operation> {
