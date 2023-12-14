@@ -94,7 +94,7 @@ fn solve(input: &str) {
 
     println!("Part 1: {}", a);
 
-    let mut wire_map: HashMap<String, u16> = HashMap::new();
+    wire_map.clear();
     wire_map.insert("b".to_string(), a);
     let a = process("a", &instructions, &mut wire_map);
 
