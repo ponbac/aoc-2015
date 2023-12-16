@@ -5,7 +5,51 @@ fn main() {
     solve(input.trim());
 }
 
-fn solve(input: &str) -> usize {
+fn solve(input: &str) {
+    let mut password = input.to_string();
+    loop {
+        password = next_password(&password);
+        if is_valid(&password) {
+            break;
+        }
+    }
+
+    println!("Part 1: {}", password);
+}
+
+fn next_password(password: &str) -> String {
+    let mut chars = password.chars().rev();
+    let mut next = String::new();
+
+    let mut carry = true;
+    while let Some(c) = chars.next() {
+        let c = if carry {
+            carry = false;
+            match c {
+                'z' => 'a',
+                _ => (c as u8 + 1) as char,
+            }
+        } else {
+            c
+        };
+
+        if c == 'i' || c == 'o' || c == 'l' {
+            next.push((c as u8 + 1) as char);
+            next.push_str(&"a".repeat(chars.count()));
+            break;
+        }
+
+        if c == 'z' {
+            carry = true;
+        }
+
+        next.push(c);
+    }
+
+    todo!()
+}
+
+fn is_valid(password: &str) -> bool {
     todo!()
 }
 
