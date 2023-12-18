@@ -57,7 +57,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "day12"
+name = "day13"
 version = "0.1.0"
 dependencies = [
  "itertools",
