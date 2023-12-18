@@ -28,28 +28,15 @@ fn solve(input: &str) {
 
 fn next_password(password: &str) -> String {
     let mut chars: Vec<char> = password.chars().collect();
-    let mut i = chars.len() - 1;
-    loop {
-        let mut c = chars[i] as u8;
-        if c == b'z' {
-            c = b'a';
-        } else {
-            c += 1;
+    for c in chars.iter_mut().rev() {
+        match c {
+            'z' => *c = 'a',
+            _ => {
+                *c = ((*c as u8) + 1) as char;
+                break;
+            }
         }
-        chars[i] = c as char;
-
-        if c != b'a' {
-            break;
-        }
-
-        if i == 0 {
-            chars.insert(0, 'a');
-            break;
-        }
-
-        i -= 1;
     }
-
     chars.into_iter().collect()
 }
 
